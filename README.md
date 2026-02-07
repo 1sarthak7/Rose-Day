@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/falling-hearts.gif" width="600" alt="Falling hearts animation">
+</p>
+
 #  Rose Day — A Cinematic Scroll Experience
 
 A handcrafted, cinematic Rose Day website designed to feel **soft, warm, and emotionally intimate**.
