@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For You | Rose Day</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Montserrat:wght@200;300;400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 1. ATMOSPHERE --- */
+        :root {
+            --bg-deep: #1a0508; 
+            --text-ivory: #f2e8e8;
+            --text-gold: #d4af37;
+            --font-serif: 'Cormorant Garamond', serif;
+            --font-sans: 'Montserrat', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-deep);
+            background: radial-gradient(circle at 50% 40%, #2d1016 0%, #120305 100%);
+            color: var(--text-ivory);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+            width: 100vw;
+            height: 100vh;
+            overscroll-behavior: none; 
+        }
+
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, rgba(20, 5, 5, 0.4) 100%);
+            pointer-events: none; z-index: 10;
+        }
+
+        /* --- 2. LAYERS --- */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #petals-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+        main { position: relative; z-index: 20; width: 100%; }
+
+        /* --- 3. TYPOGRAPHY --- */
+        section {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center; padding: 2rem;
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 2s ease-out, transform 2s ease-out;
+            will-change: opacity, transform;
+        }
+
+        section.revealed { opacity: 1; transform: translateY(0); }
+
+        section.revealed .whisper-text {
+            animation: whisperAnim 2.5s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes whisperAnim {
+            0% { filter: blur(10px); opacity: 0; letter-spacing: -1px; }
+            100% { filter: blur(0px); opacity: 1; letter-spacing: 1px; }
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(3.5rem, 8vw, 6.5rem);
+            font-weight: 300; line-height: 1; margin-bottom: 1.5rem;
+            color: #fff0f5; text-shadow: 0 0 40px rgba(139, 0, 0, 0.4);
+        }
+
+        p {
+            font-family: var(--font-serif);
+            font-size: clamp(1.2rem, 3vw, 1.7rem);
+            color: rgba(255, 240, 245, 0.9);
+            max-width: 600px; line-height: 1.6; margin-bottom: 2rem; font-weight: 300;
+        }
+
+        .highlight { color: var(--text-gold); font-style: italic; }
+
+        /* --- 4. UI ELEMENTS --- */
+        button.interact-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff; padding: 1.2rem 3rem;
+            font-family: var(--font-sans); font-size: 0.9rem;
+            letter-spacing: 2px; text-transform: uppercase;
+            border-radius: 50px; cursor: pointer;
+            backdrop-filter: blur(8px); transition: all 0.6s ease;
+            margin-top: 2rem; box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        button.interact-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 200, 200, 0.4);
+            box-shadow: 0 0 30px rgba(139, 0, 0, 0.2);
+            transform: scale(1.02);
+        }
+
+        #sound-toggle {
+            position: fixed; bottom: 2rem; right: 2rem; z-index: 50;
+            opacity: 0.5; cursor: pointer; width: 30px; height: 30px;
+            transition: opacity 0.3s;
+        }
+        #sound-toggle.playing { opacity: 1; }
+
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #120305; z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--text-gold); font-family: var(--font-sans);
+            letter-spacing: 4px; font-size: 0.8rem;
+            transition: opacity 1.5s ease;
+        }
+
+        /* Mobile Fixes */
+        @media (max-width: 768px) {
+            #sec-1 { justify-content: flex-end; padding-bottom: 25vh; }
+            #sec-2 { justify-content: flex-start; padding-top: 15vh; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">GATHERING HEARTS...</div>
+    <div class="vignette"></div>
+
+    <div id="webgl-container"></div>
+    <canvas id="petals-canvas"></canvas>
+
+    <audio id="bg-music" loop preload="auto">
+        <source src="rose_theme.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="sound-toggle">
+        <svg viewBox="0 0 24 24" fill="#f2e8e8">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+        </svg>
+    </div>
+
+    <main>
+        <section id="sec-1">
+            <h1 class="whisper-text">Happy Rose Day</h1>
+            <p class="whisper-text">To the one who makes my world <span class="highlight">gentle</span>.</p>
+        </section>
+
+        <section id="sec-2">
+            <p class="whisper-text" style="font-style: italic; font-size: 1.5rem;">
+                "A rose speaks of love silently, <br>in a language known only to the heart."
+            </p>
+            <br>
+            <p class="whisper-text">
+                Every petal falling here is a quiet thought of you.<br>
+                Timeless, endless, and yours.
+            </p>
+        </section>
+
+        <section id="sec-3">
+            <p class="whisper-text">I wanted to give you something that never fades.</p>
+            <button class="interact-btn whisper-text" id="bloom-btn">Accept this Rose</button>
+        </section>
+    </main>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // --- 1. CONFIGURATION ---
+        const config = {
+            desktop: {
+                start: { x: 0, y: 0, z: 0, rx: 0.5, ry: 0, rz: 0 },
+                middle: { x: 1.5, y: -0.5, z: 2, rx: 0.3, ry: 0.8, rz: 0.1 },
+                end: { x: 0, y: 0.5, z: 4.5, rx: 0.8, ry: 1.5, rz: 0.2 }
+            },
+            mobile: {
+                start: { x: 0, y: 0.8, z: 0, rx: 0.5, ry: 0, rz: 0 },
+                middle: { x: 0, y: 1.5, z: 1.5, rx: 0.4, ry: 0.5, rz: 0 },
+                end: { x: 0, y: 0.8, z: 3.5, rx: 0.6, ry: 1.0, rz: 0 }
+            },
+            lightBase: 8,
+            lightPeak: 14,
+            lerpSpeed: 0.04
+        };
+
+        const state = {
+            scrollTarget: 0, scrollCurrent: 0,
+            mouse: { x: 0, y: 0 },
+            isMobile: window.innerWidth < 768
+        };
+
+        // --- 2. SCENE ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x1a0508, 0.03); // Warm Plum Fog
+
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 9);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- 3. LIGHTING (WARM & ROMANTIC) ---
+        const ambientLight = new THREE.AmbientLight(0xffcfd1, 0.7);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.SpotLight(0xffddcc, config.lightBase);
+        keyLight.position.set(5, 8, 5);
+        keyLight.angle = 0.8; 
+        keyLight.penumbra = 1; 
+        keyLight.castShadow = true;
+        keyLight.shadow.bias = -0.0001;
+        scene.add(keyLight);
+
+        const rimLight = new THREE.SpotLight(0xffc1cc, 3);
+        rimLight.position.set(-5, 5, -5);
+        scene.add(rimLight);
+
+        const fillLight = new THREE.PointLight(0xd46a6a, 2.5); 
+        fillLight.position.set(0, -3, 2);
+        scene.add(fillLight);
+
+        // --- 4. ROSE MODEL (VELVET) ---
+        let roseGroup = new THREE.Group();
+        scene.add(roseGroup);
+        const loader = new GLTFLoader();
+
+        function applyVelvetMaterial(mesh) {
+            if (mesh.isMesh) {
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                mesh.material = new THREE.MeshPhysicalMaterial({
+                    color: mesh.material.color, map: mesh.material.map,
+                    roughness: 0.55, metalness: 0.0,
+                    sheen: 1.2, sheenColor: 0xffd7e6,
+                    clearcoat: 0.02,
+                    emissive: 0x330005, emissiveIntensity: 0.15
+                });
+            }
+        }
+
+        loader.load('./rose.glb', (gltf) => {
+            const rose = gltf.scene;
+            rose.traverse(applyVelvetMaterial);
+            const box = new THREE.Box3().setFromObject(rose);
+            const center = box.getCenter(new THREE.Vector3());
+            rose.position.sub(center);
+            roseGroup.add(rose);
+            updateResponsive();
+            removeLoader();
+        }, undefined, () => {
+            const geo = new THREE.TorusKnotGeometry(1.2, 0.4, 150, 20);
+            const mat = new THREE.MeshPhysicalMaterial({ 
+                color: 0x990033, roughness: 0.6, sheen: 1.2, sheenColor: 0xffd7e6 
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            roseGroup.add(mesh);
+            removeLoader();
+        });
+
+        function removeLoader() {
+            const l = document.getElementById('loader');
+            l.style.opacity = '0';
+            setTimeout(() => { l.remove(); document.getElementById('sec-1').classList.add('revealed'); }, 1000);
+        }
+
+        // --- 5. CINEMATIC SCROLL ---
+        function getScrollProgress() {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            return Math.min(Math.max(winScroll / height, 0), 1);
+        }
+        window.addEventListener('scroll', () => { state.scrollTarget = getScrollProgress(); });
+
+        // --- 6. ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+        let bloomActive = false;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+            
+            // Inertia
+            state.scrollCurrent += (state.scrollTarget - state.scrollCurrent) * config.lerpSpeed;
+
+            if (roseGroup) {
+                const poses = state.isMobile ? config.mobile : config.desktop;
+                const p = state.scrollCurrent;
+                let targetPos = { x:0, y:0, z:0 };
+                let targetRot = { x:0, y:0, z:0 };
+
+                // Pose Interpolation
+                if (p < 0.5) {
+                    const n = p * 2; 
+                    targetPos.x = THREE.MathUtils.lerp(poses.start.x, poses.middle.x, n);
+                    targetPos.y = THREE.MathUtils.lerp(poses.start.y, poses.middle.y, n);
+                    targetPos.z = THREE.MathUtils.lerp(poses.start.z, poses.middle.z, n);
+                    targetRot.x = THREE.MathUtils.lerp(poses.start.rx, poses.middle.rx, n);
+                    targetRot.y = THREE.MathUtils.lerp(poses.start.ry, poses.middle.ry, n);
+                    targetRot.z = THREE.MathUtils.lerp(poses.start.rz, poses.middle.rz, n);
+                } else {
+                    const n = (p - 0.5) * 2;
+                    targetPos.x = THREE.MathUtils.lerp(poses.middle.x, poses.end.x, n);
+                    targetPos.y = THREE.MathUtils.lerp(poses.middle.y, poses.end.y, n);
+                    targetPos.z = THREE.MathUtils.lerp(poses.middle.z, poses.end.z, n);
+                    targetRot.x = THREE.MathUtils.lerp(poses.middle.rx, poses.end.rx, n);
+                    targetRot.y = THREE.MathUtils.lerp(poses.middle.ry, poses.end.ry, n);
+                    targetRot.z = THREE.MathUtils.lerp(poses.middle.rz, poses.end.rz, n);
+                }
+
+                // Apply + Sway
+                roseGroup.position.x = targetPos.x + (state.mouse.x * 0.1);
+                roseGroup.position.y = targetPos.y + Math.sin(t * 0.5) * 0.05; 
+                roseGroup.position.z = targetPos.z;
+
+                roseGroup.rotation.x = targetRot.x + (state.mouse.y * 0.05);
+                roseGroup.rotation.y = targetRot.y + (state.mouse.x * 0.05) + Math.sin(t * 0.2) * 0.05; 
+                roseGroup.rotation.z = targetRot.z;
+
+                // Lighting Dynamic
+                keyLight.intensity = THREE.MathUtils.lerp(config.lightBase, config.lightPeak, p);
+                
+                if(bloomActive) {
+                    keyLight.intensity = THREE.MathUtils.lerp(keyLight.intensity, 25, 0.03);
+                    roseGroup.rotation.y += 0.005; 
+                }
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- 7. RESPONSIVE ---
+        function updateResponsive() {
+            state.isMobile = window.innerWidth < 768;
+            if(roseGroup) roseGroup.scale.setScalar(state.isMobile ? 1.8 : 2.2);
+            resizeCanvas(); // Important: Fixes the missing hearts on load
+        }
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            updateResponsive();
+        });
+        document.addEventListener('mousemove', (e) => {
+            state.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            state.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // --- 8. LOVE SHADER (HEARTS + PETALS) ---
+        const canvas = document.getElementById('petals-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const colors = ['#750015', '#990022', '#ffc2d1', '#ffe4e1']; 
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        class Particle {
+            constructor(forceHeart = false) { this.reset(true, forceHeart); }
+            
+            reset(initial, forceHeart = false) {
+                this.x = Math.random() * canvas.width;
+                this.y = initial ? Math.random() * canvas.height : -20;
+                this.z = Math.random(); 
+                
+                // 30% Chance of Heart Shape
+                this.isHeart = forceHeart || Math.random() < 0.3;
+
+                const baseSize = this.isHeart ? 12 : 7;
+                this.size = (Math.random() * baseSize + 4) * (1 + this.z);
+                this.speed = (Math.random() * 0.4 + 0.2) * (1 + this.z * 0.5); 
+                
+                const colorHex = colors[Math.floor(Math.random() * colors.length)];
+                this.color = colorHex;
+                
+                // Opacity Logic
+                const isLight = (colorHex === '#ffc2d1' || colorHex === '#ffe4e1');
+                this.opacity = (Math.random() * 0.4 + 0.1) * (this.z + 0.2);
+                if(isLight) this.opacity *= 0.6; 
+
+                this.angle = Math.random() * Math.PI * 2;
+                this.spin = (Math.random() - 0.5) * 0.03;
+                this.swaySpeed = Math.random() * 0.01 + 0.005;
+                this.swayRange = Math.random() * 2;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                
+                if (this.isHeart) {
+                    // BEZIER HEART
+                    const s = this.size; 
+                    ctx.moveTo(0, -s/4);
+                    ctx.bezierCurveTo(s/2, -s/2, s, 0, 0, s); 
+                    ctx.bezierCurveTo(-s, 0, -s/2, -s/2, 0, -s/4); 
+                } else {
+                    // PETAL
+                    const s = this.size;
+                    ctx.bezierCurveTo(s, -s/2, s, s/2, 0, s);
+                    ctx.bezierCurveTo(-s, s/2, -s, -s/2, 0, 0);
+                }
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.y += this.speed;
+                this.x += Math.sin(this.y * this.swaySpeed + this.z) * (this.swayRange + this.z);
+                this.angle += this.spin;
+                if (this.y > canvas.height + 20) this.reset();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            const count = state.isMobile ? 35 : 80; 
+            for(let i=0; i<count; i++) particles.push(new Particle());
+        }
+        
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateParticles);
+        }
+        
+        // Start the system
+        resizeCanvas(); 
+        animateParticles();
+
+        // --- 9. INTERACTION ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) entry.target.classList.add('revealed');
+            });
+        }, { threshold: 0.15 });
+        document.querySelectorAll('section').forEach(sec => observer.observe(sec));
+
+        const btn = document.getElementById('bloom-btn');
+        btn.addEventListener('click', function() {
+            this.textContent = "Yours, forever. ❤️";
+            this.style.pointerEvents = "none";
+            this.style.borderColor = "#ff99aa";
+            this.style.background = "rgba(255, 100, 100, 0.2)"; 
+            bloomActive = true;
+            
+            // HEART BURST
+            for(let i=0; i<50; i++) {
+                let p = new Particle(true); 
+                p.y = window.innerHeight + Math.random() * 100; 
+                p.speed = - (Math.random() * 2 + 1); // Float UP
+                p.color = Math.random() > 0.5 ? '#ff0033' : '#ffc2d1';
+                p.opacity = 0.8;
+                particles.push(p);
+            }
+        });
+
+        // Audio
+        const audioIcon = document.getElementById('sound-toggle');
+        const audio = document.getElementById('bg-music');
+        let isPlaying = false;
+        audioIcon.addEventListener('click', () => {
+            if (!isPlaying) {
+                audio.play().then(() => {
+                    audioIcon.classList.add('playing');
+                    audio.volume = 0;
+                    let vol = 0;
+                    const fade = setInterval(() => {
+                        if (vol < 0.6) { vol += 0.05; audio.volume = vol; }
+                        else clearInterval(fade);
+                    }, 200);
+                });
+                isPlaying = true;
+            } else {
+                audio.pause();
+                audioIcon.classList.remove('playing');
+                isPlaying = false;
+            }
+        });
+    </script>
+</body>
+</html>
