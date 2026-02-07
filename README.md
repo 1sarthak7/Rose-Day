@@ -1,12 +1,9 @@
-<p align="center">
-  <img src="assets/falling-hearts.gif" width="600" alt="Falling hearts animation">
-</p>
 
-#  Rose Day — A Cinematic Scroll Experience
+#  Rose Day 
 
 A handcrafted, cinematic Rose Day website designed to feel **soft, warm, and emotionally intimate**.
 
-This project is not a template or a demo — it is a **story told through light, motion, and silence**. Every scroll reveals a new emotional beat, guided by a living 3D rose that responds gently to the viewer.
+This project is not a template or a demo it is a **story told through light, motion, and silence**. Every scroll reveals a new emotional beat, guided by a living 3D rose that responds gently to the viewer.
 
 ---
 
@@ -14,7 +11,7 @@ This project is not a template or a demo — it is a **story told through light,
 
 The idea behind this project was simple:
 
-> A rose should not just be seen — it should be *felt*.
+> A rose should not just be seen it should be *felt*.
 
 Instead of loud animations or flashy UI, this experience focuses on:
 
@@ -23,15 +20,13 @@ Instead of loud animations or flashy UI, this experience focuses on:
 * Subtle motion
 * Emotional presence
 
-The rose moves closer as the viewer scrolls, petals and hearts float like passing thoughts, and the scene slowly warms — creating a moment meant to be *lingered in*.
-
 ---
 
 ##  Key Features
 
 ### Cinematic Scroll Direction
 
-* Scroll-driven choreography (no random motion)
+* Scroll driven choreography (no random motion)
 * Rose transitions through emotional "poses"
 * Smooth inertia-based movement for a heavy, premium feel
 
@@ -110,29 +105,6 @@ No external UI frameworks were used.
 
 ---
 
-##  How to Run Locally
-
-Because this project uses ES modules and local assets, it must be served via a local server.
-
-### Option 1: Using Python
-
-```bash
-python -m http.server
-```
-
-Then open:
-
-```
-http://localhost:8000
-```
-
-### Option 2: VS Code Live Server
-
-* Install **Live Server** extension
-* Right-click `index.html` → **Open with Live Server**
-
----
-
 ##  Design Philosophy
 
 * Motion should feel intentional, not playful
@@ -140,11 +112,9 @@ http://localhost:8000
 * Silence is allowed — not everything needs to move
 * Less UI, more emotion
 
-This project was built to feel **personal**, not impressive for the sake of it.
-
 ---
 
-## 💌 Ideal Use Cases
+##  Ideal Use Cases
 
 * Rose Day / Valentine’s Day greeting
 * Personal romantic gift
@@ -156,15 +126,7 @@ This project was built to feel **personal**, not impressive for the sake of it.
 ##  Author
 
 **Sarthak Bhopale**
-Creative Developer · Cinematic UI Enthusiast
+Engineering Student
 
 ---
-
-##  Final Note
-
-This project is best experienced slowly.
-
-Scroll gently.
-Let the moment breathe.
-
-🌹
+## 🌹
