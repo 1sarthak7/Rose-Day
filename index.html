@@ -256,7 +256,7 @@
             }
         }
 
-        loader.load('./rose.glb', (gltf) => {
+        loader.load('rose.glb', (gltf) => {
             const rose = gltf.scene;
             rose.traverse(applyVelvetMaterial);
             const box = new THREE.Box3().setFromObject(rose);
